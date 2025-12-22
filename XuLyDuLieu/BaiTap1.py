@@ -14,4 +14,5 @@ Y = data[:, -1]
 
 X = np.insert(X, 0, 1, axis=1)
 
-print(X)
+A = np.dot(X.T, X)
+
