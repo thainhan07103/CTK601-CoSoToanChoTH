@@ -28,9 +28,19 @@ print("Theta found by normal equation:", theta)
 theta = np.zeros(n)
 alpha = 0.01
 nb_it = 1500
-
 for it in range(nb_it):
     # gradient = np.dot(X.T, (np.dot(X, theta) - y)) / m
     gradient =(np.dot(np.dot(X.T, X), theta) - np.dot(X.T, y)) / m
     theta = theta - alpha * gradient
 print("Theta found by gradient descent:", theta)
+
+# Vẽ đường thẳng hồi quy tìm được chồng lên dữ liệu
+# Tính giá trị dự báo với theta tìm được
+h = np.dot(X, theta)
+# Vẽ lại dữ liệu gốc
+plt.plot(data[:, 0], data[:, -1], "ro")
+plt.xlabel("Area")
+plt.ylabel("Price")
+#Vẽ giá trị dự báo chồng lên
+plt.plot(data[:, 0], h)
+plt.show()
