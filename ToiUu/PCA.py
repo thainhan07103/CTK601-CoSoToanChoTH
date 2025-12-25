@@ -2,105 +2,76 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ============================================================
-# BÀI TẬP 4: PHÂN TÍCH THÀNH PHẦN CHÍNH (PCA) 
-# ============================================================
+# ==========================================================
+# BÀI TẬP 4: PHÂN TÍCH THÀNH PHẦN CHÍNH (PCA)
+# ==========================================================
 
-# ------------------------------------------------------------
-# Bước 1: Đọc tập dữ liệu "X.csv" lưu vào biến X [cite: 1370]
-# ------------------------------------------------------------
-# Dùng pandas đọc file csv không có header
+# --- YÊU CẦU: Đọc tập dữ liệu "X.csv" lưu vào biến X ---
+# (Tập dữ liệu này chỉ có 2 cột, n=2)
 df = pd.read_csv('XuLyDuLieu/X.csv', header=None)
-# Chuyển về dạng numpy array để tính toán
-X = df.values 
-m, n = X.shape
-print(f"Đã đọc dữ liệu: {m} dòng, {n} cột.")
+X = df.values
+m = X.shape[0] # Số lượng mẫu dữ liệu
 
-# ------------------------------------------------------------
-# Bước 2: Vẽ tập dữ liệu X [cite: 1371]
-# ------------------------------------------------------------
-# Dùng X[:,0] là trục ngang, X[:,1] là trục dọc
-plt.figure(figsize=(8, 8))
-plt.plot(X[:, 0], X[:, 1], 'ro', label='Dữ liệu gốc') # 'ro' là chấm đỏ [cite: 1372]
-plt.title('Bài tập 4: PCA')
+# --- YÊU CẦU: Vẽ tập dữ liệu X (dùng 'ro') ---
+# Vẽ dữ liệu gốc màu đỏ ('ro')
+plt.plot(X[:, 0], X[:, 1], 'ro', label='Dữ liệu gốc')
 
-# ------------------------------------------------------------
-# Bước 3: Tìm 1 thành phần chính của X (k=1) [cite: 1373]
-# ------------------------------------------------------------
-# Để làm bước này, ta cần thực hiện các bước nhỏ trong phần lý thuyết[cite: 1345]:
+# --- YÊU CẦU: Tìm 1 thành phần chính của X (k=1), lưu vào Ureduce ---
+# (Bước này đề bài ẩn các bước phụ, nhưng theo lý thuyết cần làm như sau)
 
-# 3a. Quy tâm dữ liệu: đưa tâm của X về gốc toạ độ [cite: 1347]
+# 1. Quy tâm dữ liệu (Gợi ý: đưa tâm về gốc tọa độ)
 mean = np.mean(X, axis=0)
-X_centered = X - mean # Biến X đã quy tâm
+X_center = X - mean
 
-# 3b. Tính ma trận phương sai - hiệp phương sai C = (1/m) * X^T * X [cite: 1349, 1350]
-C = (1/m) * (X_centered.T @ X_centered)
+# 2. Tính ma trận hiệp phương sai
+# Công thức: C = (1/m) * X^T * X
+C = (1/m) * np.dot(X_center.T, X_center)
 
-# 3c. Tìm giá trị riêng L và vector riêng U của C [cite: 1351]
-L, U = np.linalg.eig(C)
+# 3. Phân tích giá trị riêng và vector riêng
+vals, vecs = np.linalg.eig(C)
 
-# 3d. Sắp xếp các giá trị riêng theo thứ tự giảm dần [cite: 1353]
-# np.argsort trả về chỉ số, thêm dấu trừ để sort giảm dần
-index = np.argsort(-L)
-L = L[index]
-U = U[:, index]
+# 4. Sắp xếp giảm dần theo giá trị riêng để chọn thành phần tốt nhất
+idx = np.argsort(-vals)
+vals = vals[idx]
+vecs = vecs[:, idx]
 
-print("Các giá trị riêng (L):", L)
-print("Các vector riêng (U):", U)
-
-# 3e. Giữ lại k cột đầu tiên của U (k=1) lưu vào Ureduce [cite: 1357, 1373]
+# 5. Lấy k=1 vector đầu tiên
 k = 1
-Ureduce = U[:, 0:k]
-print(f"Ma trận Ureduce (k={k}):\n", Ureduce)
+U_reduce = vecs[:, :k]
+print(f"Vector thành phần chính (Ureduce):\n{U_reduce}")
 
-# ------------------------------------------------------------
-# Bước 4: Chiếu dữ liệu gốc lên thành phần chính, lưu vào Z [cite: 1374]
-# ------------------------------------------------------------
-# Công thức: Z = X * Ureduce [cite: 1363]
-Z = X_centered @ Ureduce
+# --- YÊU CẦU: Chiếu dữ liệu gốc lên thành phần chính, lưu vào Z ---
+# Công thức: Z = X * U_reduce
+Z = np.dot(X_center, U_reduce)
 
-# ------------------------------------------------------------
-# Bước 5: Phục hồi lại X bằng cách sử dụng Z và Ureduce, lưu vào Xrestore [cite: 1375]
-# ------------------------------------------------------------
-# Công thức: X_restore = Z * Ureduce^T [cite: 1366]
-# Lưu ý: Kết quả này là dữ liệu đã quy tâm, muốn về dữ liệu gốc ban đầu cần cộng lại mean
-X_restore_centered = Z @ Ureduce.T
-X_restore = X_restore_centered + mean 
+# --- YÊU CẦU: Phục hồi lại X dùng Z và Ureduce, lưu vào X_restore ---
+# Công thức: X_restore = Z * U_reduce.T
+# Lưu ý: Phải cộng lại 'mean' vì lúc đầu đã trừ đi
+X_restore = np.dot(Z, U_reduce.T) + mean
 
-# ------------------------------------------------------------
-# Bước 6: Tính sự khác biệt trung bình giữa X và Xrestore [cite: 1376]
-# ------------------------------------------------------------
-# Công thức: (1/m) * sum(||x - x_restore||^2)
+# --- YÊU CẦU: Tính sự khác biệt trung bình (Sai số tái tạo) ---
+# GỢI Ý: 1/m * sum(||x - x_restore||^2)
+# GỢI Ý: Dùng np.sum() hoặc vòng lặp for
 diff = X - X_restore
-# Dùng np.sum tính tổng bình phương cho từng dòng, sau đó mean 
-error = np.mean(np.sum(diff**2, axis=1)) 
+error = np.mean(np.sum(diff**2, axis=1))
 print(f"Sự khác biệt trung bình (Reconstruction Error): {error}")
 
-# ------------------------------------------------------------
-# Bước 7: Tính tổng phương sai của dữ liệu (gốc) [cite: 1380]
-# ------------------------------------------------------------
-# Công thức: (1/m) * sum(||x||^2) - Áp dụng trên dữ liệu đã quy tâm
-total_variance = np.mean(np.sum(X_centered**2, axis=1))
+# --- YÊU CẦU: Tính tổng phương sai của dữ liệu ---
+total_variance = np.mean(np.sum((X - mean)**2, axis=1))
 print(f"Tổng phương sai (Total Variance): {total_variance}")
 
-# ------------------------------------------------------------
-# Bước 8: Tính tỉ lệ và so sánh [cite: 1381, 1382]
-# ------------------------------------------------------------
-# Tính tỉ lệ lỗi / tổng phương sai
-ratio_error = error / total_variance
-print(f"Tỉ lệ (Lỗi / Tổng phương sai): {ratio_error}")
+# --- KIỂM TRA TỈ LỆ (Phần đọc thêm) ---
+print(f"Tỉ lệ sai số / tổng phương sai: {error/total_variance}")
+print(f"Tỉ lệ lambda bị mất (lambda_2 / sum): {vals[1]/np.sum(vals)}")
 
-# So sánh với tỉ lệ lambda bị mất (lambda_2 / tổng lambda) [cite: 1384]
-# Vì giữ lại k=1 (lambda_1), phần mất đi là lambda_2
-ratio_lambda_loss = L[1] / np.sum(L)
-print(f"Tỉ lệ Lambda bị mất (L[1] / Sum(L)): {ratio_lambda_loss}")
-print("=> Nhận xét: Hai tỉ lệ này xấp xỉ bằng nhau.")
+# --- VẼ HÌNH MINH HỌA KẾT QUẢ ---
+# Vẽ điểm phục hồi màu xanh hình sao ('b*')
+plt.plot(X_restore[:, 0], X_restore[:, 1], 'b*', label='Dữ liệu phục hồi')
 
-# ------------------------------------------------------------
-# Bước 9: Vẽ dữ liệu gốc X và dữ liệu phục hồi Xrestore lên cùng đồ thị [cite: 1385]
-# ------------------------------------------------------------
-plt.plot(X_restore[:, 0], X_restore[:, 1], 'b*', label='Dữ liệu phục hồi') # Vẽ Xrestore
-plt.legend()
-plt.axis('equal') # Chỉnh tỉ lệ trục cho vuông góc
-plt.grid(True)
+# Vẽ đường nối giữa điểm gốc và điểm phục hồi để dễ hình dung
+for p1, p2 in zip(X, X_restore):
+    plt.plot([p1[0], p2[0]], [p1[1], p2[1]], 'k--', alpha=0.1)
+
+plt.title('Minh hoạ PCA: Chiếu dữ liệu xuống 1 chiều')
+plt.axis('equal') # Quan trọng: Trục x, y tỉ lệ 1:1 mới thấy góc vuông
 plt.show()
